@@ -52,6 +52,11 @@ exports.handler = async (event) => {
 	catch(error)
 	{
 		//
+		//	<>> Put the detail in the logs for easy debugging
+		//
+		console.log(error);
+		
+		//
 		//  1.  Create a message to send back.
 		//
 		let message = {
@@ -156,9 +161,8 @@ function request_logs(container)
 				'X-Auth-Key': container.cloudflare_auth_key
 			},
 			qs: {
-				start: container.start_time,
-				end: container.end_time,
-				count: container.request.code,
+				start: "2018-06-06T18:43:00.000Z", //container.start_time,
+				end: "2018-06-06T19:43:00.000Z", //container.end_time,
 				fields: 'RayID,ClientIP'
 			}
 		};
@@ -166,8 +170,8 @@ function request_logs(container)
 		//
 		//  -> Execute the request.
 		//
-		request.post(options, function(error, req, body) {
-
+		request.post(options, function(error, res, body) {
+			
 			//
 			//  1.  Check if there was an internal error.
 			//
@@ -177,24 +181,28 @@ function request_logs(container)
 			}
 
 			//
-			//	Check for status code 204 (No Content). Meaning CloudFlare
-			//	will send this status when there are no logs for the given
-			//	time frame.
+			//	Check if we got any logs back within the time ragne that 
+			//	we specified.
 			//
-			if(req.statusCode == 204)
+			//	WARNING:	the old API was returning 204 to tell that the request
+			//				is ok, but there is no data. In the new one you
+			//				get 200 no matter what.
+			//
+			if(body === undefined)
 			{
 				//
 				//	->	Move to the next chain
 				//
 				return resolve(container);
 			}
-
-			console.log("CloudFlare response: ", body);
-
+			
 			//
-			//	Save the response from CloudFlare for the next Promise
+			//	Save the response from CloudFlare for the next Promise, and also
+			//	remove any trailing white spaces from the response. 
 			//
-			container.logs = body;
+			//	CloudFlare is bit messy ;)
+			//
+			container.logs = body.trim();
 
 			//
 			//	->	Move to the next chain
@@ -291,7 +299,7 @@ function prepare_data_for_sumo_logic(container)
 			//
 			//	5.
 			//
-			let metadata_key = sumo_meta_key();
+			let metadata_key = sumo_meta_key(container);
 
 			//
 			//	6.
@@ -349,13 +357,7 @@ function pass_logs_to_sumo_logic(container)
 		    //  1.  Prepare a HTTP request promise to our array for later 
 		    //      execution.
 		    //
-		    tmp.push(make_sumo_logic_request(
-		        
-		        key, 
-		        container.sumo_logs[key]), 
-		        container.request.url
-		        
-            );
+		    tmp.push(make_sumo_logic_request(key, container.sumo_logs[key], container.sumo_url));
 		}
 		
 		//
@@ -363,6 +365,8 @@ function pass_logs_to_sumo_logic(container)
 		//
 		Promise.all(tmp)
 		.then(function() {
+		    
+		    console.log("Promise All");
 		    
 		    //
 			//	->	Move to the next chain
@@ -468,23 +472,28 @@ function make_sumo_logic_request(key, data, url)
 		//
 		//  -> Execute the request.
 		//
-		request.post(options, function(error, req, body) {
+		request.post(options, function(error, res, body) {
 
 			//
 			//  1.  Check if there was an internal error.
 			//
 			if(error)
 			{
-				throw error;
+				return reject(error);
 			}
 
-			console.log(req);
-			console.log(body);
+			//
+			//	2.	Check if got anyting but a positive messages
+			//
+			if(res.statusCode > 200)
+			{
+				return reject(new Error("Sumo Logic returned: " + res.statusCode));
+			}
 
 			//
 			//  ->  Return the promise.
 			//
-			return;
+			return resolve();
 
 		});
 
