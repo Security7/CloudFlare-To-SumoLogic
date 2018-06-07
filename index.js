@@ -13,7 +13,7 @@ exports.handler = async (event) => {
 		//
 		//	Any request from a API or Lambda invocation goes here.
 		//
-		req: {},
+		req: event,
 		//
 		//	Save all the env variable.
 		//
@@ -36,7 +36,7 @@ exports.handler = async (event) => {
 		//
 		//	The default response for Lambda.
 		//
-		res: "Done!"
+		res: event
 	};
 
 	//
@@ -80,7 +80,7 @@ exports.handler = async (event) => {
 	//
 	//	->	Return a positive response
 	//
-	return container.response;
+	return container.res;
 	
 };
 
