@@ -21,9 +21,10 @@ exports.handler = async (event) => {
 		zone_id                  : process.env.CLOUDFLARE_ZONE_ID,
 		cloudflare_auth_email    : process.env.CLOUDFLARE_AUTH_EMAIL,
 		cloudflare_auth_key      : process.env.CLOUDFLARE_AUTH_KEY,
+		cloudflare_fields   	 : process.env.CLOUDFLARE_FIELDS,
+		source_name_override     : process.env.SOURCE_NAME_OVERRIDE 	||	process.env.CLOUDFLARE_ZONE_ID,
 		source_category_override : process.env.SOURCE_CATEGORY_OVERRIDE || 	'none',
 		source_host_override     : process.env.SOURCE_HOST_OVERRIDE 	|| 	'api.cloudflare.com',
-		source_name_override     : process.env.SOURCE_NAME_OVERRIDE 	||	process.env.CLOUDFLARE_ZONE_ID,
 		//
 		//	This variable will hold all the logs from CloudFlare.
 		//
@@ -111,7 +112,7 @@ function time_calculation(container)
 		end_time.setMilliseconds(0);
 
 		//
-		//	3.
+		//	3.	Set the start time based on the end time
 		//
 		let start_time = new Date(end_time - (1 * 60 * 1000));
 
@@ -163,7 +164,7 @@ function request_logs(container)
 			qs: {
 				start: "2018-06-06T18:43:00.000Z", //container.start_time,
 				end: "2018-06-06T19:43:00.000Z", //container.end_time,
-				fields: 'RayID,ClientIP'
+				fields: container.cloudflare_fields
 			}
 		};
 
@@ -203,7 +204,7 @@ function request_logs(container)
 			//	CloudFlare is bit messy ;)
 			//
 			container.logs = body.trim();
-
+	
 			//
 			//	->	Move to the next chain
 			//
