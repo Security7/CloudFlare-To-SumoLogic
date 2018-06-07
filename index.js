@@ -42,13 +42,12 @@ exports.handler = async (event) => {
 	//
 	//	->	Start the chain.
 	//
-	try {
-
+	try 
+	{
 		container = await time_calculation(container);
 		container = await request_logs(container);
 		container = await prepare_data_for_sumo_logic(container);
 		container = await pass_logs_to_sumo_logic(container);
-
 	}
 	catch(error)
 	{
@@ -182,12 +181,12 @@ function request_logs(container)
 			}
 
 			//
-			//	Check if we got any logs back within the time ragne that 
-			//	we specified.
+			//	2.	Check if we got any logs back within the time ragne that 
+			//		we specified.
 			//
-			//	WARNING:	the old API was returning 204 to tell that the request
-			//				is ok, but there is no data. In the new one you
-			//				get 200 no matter what.
+			//		WARNING:	the old API was returning 204 to tell that the 
+			//					request is ok, but there is no data. In the new 
+			//					one you get 200 no matter what.
 			//
 			if(body === undefined)
 			{
@@ -198,10 +197,10 @@ function request_logs(container)
 			}
 			
 			//
-			//	Save the response from CloudFlare for the next Promise, and also
-			//	remove any trailing white spaces from the response. 
+			//	3.	Save the response from CloudFlare for the next Promise, and 
+			//		also remove any trailing white spaces from the response. 
 			//
-			//	CloudFlare is bit messy ;)
+			//		CloudFlare is bit messy ;)
 			//
 			container.logs = body.trim();
 	
@@ -243,23 +242,26 @@ function prepare_data_for_sumo_logic(container)
 		//
 		//	<>> Log how many entries did we get
 		//
-		console.log('Log events: ' + logs.length);
+		console.log("Log events: ", logs.length);
 
 		//
-		//	Loop over each log entry so we can modify each individual log
+		//	3.	Loop over each log entry so we can modify each individual log
 		//
 		logs.forEach(function(log) {
 
 			//
+			//	<>> For debug, something wierd happend, where instead getting 
+			//		522 messages, I got 7, and they were not JSON :o
+			//
+			if(logs.length < 50)
+			{
+				console.log(log);
+			}
+			
+			//
 			//	1.	Convert the line in to a JS object
 			//
 			let parsed_log = JSON.parse(log);
-
-			//
-			//	2.	Sumo Logic only supports 13 digit epoch time; convert
-			//		original timestamp to a JSON Date object
-
-			parsed_log.timestamp = parsed_log.timestamp / 1000000;
 
 			//
 			//	3.
@@ -278,24 +280,23 @@ function prepare_data_for_sumo_logic(container)
 					parsed_log.cache.endTimestamp = parsed_log.cache.endTimestamp / 1000000;
 				}
 			}
-
+			
 			//
-			//	4.
+			//	x.	Change the order of the elements in the object becasue 
+			//		Sumo will generally select the timestamp that appears 
+			//		"furthest left" in the message. 		
 			//
-			if(!!parsed_log.edge)
-			{
-				if(!!parsed_log.edge.startTimestamp
-					&& parsed_log.edge.startTimestamp !== null)
-				{
-					parsed_log.edge.startTimestamp = parsed_log.edge.startTimestamp / 1000000;
-				}
-
-				if(!!parsed_log.edge.endTimestamp
-					&& parsed_log.edge.endTimestamp !== null)
-				{
-					parsed_log.edge.endTimestamp = parsed_log.edge.endTimestamp / 1000000;
-				}
-			}
+			let reorganized_logs = {
+				EdgeStartTimestamp: parsed_log.EdgeStartTimestamp,
+				EdgeEndTimestamp: parsed_log.EdgeEndTimestamp,
+				ClientIP: parsed_log.ClientIP,
+				ClientRequestHost: parsed_log.ClientRequestHost,
+				ClientRequestMethod: parsed_log.ClientRequestMethod,
+				ClientRequestURI: parsed_log.ClientRequestURI,
+				EdgeResponseBytes: parsed_log.EdgeResponseBytes,
+				EdgeResponseStatus: parsed_log.EdgeResponseStatus,
+				RayID: parsed_log.RayID
+			};
 
 			//
 			//	5.
@@ -303,15 +304,17 @@ function prepare_data_for_sumo_logic(container)
 			let metadata_key = sumo_meta_key(container);
 
 			//
-			//	6.
+			//	6.	Check if we have a key already in our object, and if so we 
+			//		just push to the array new data. Or, we crate a new array
+			//		for that particular key
 			//
 			if(metadata_key in container.sumo_logs)
 			{
-				 container.sumo_logs[metadata_key].push(parsed_log);
+				 container.sumo_logs[metadata_key].push(reorganized_logs);
 			}
 			else
 			{
-				 container.sumo_logs[metadata_key] = [parsed_log];
+				 container.sumo_logs[metadata_key] = [reorganized_logs];
 			}
 
 		});
