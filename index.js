@@ -264,7 +264,7 @@ function prepare_data_for_sumo_logic(container)
 			let parsed_log = JSON.parse(log);
 
 			//
-			//	3.
+			//	2.
 			//
 			if(!!parsed_log.cache)
 			{
@@ -282,29 +282,19 @@ function prepare_data_for_sumo_logic(container)
 			}
 			
 			//
-			//	x.	Change the order of the elements in the object becasue 
+			//	3.	Change the order of the elements in the object becasue 
 			//		Sumo will generally select the timestamp that appears 
 			//		"furthest left" in the message. 		
 			//
-			let reorganized_logs = {
-				EdgeStartTimestamp: parsed_log.EdgeStartTimestamp,
-				EdgeEndTimestamp: parsed_log.EdgeEndTimestamp,
-				ClientIP: parsed_log.ClientIP,
-				ClientRequestHost: parsed_log.ClientRequestHost,
-				ClientRequestMethod: parsed_log.ClientRequestMethod,
-				ClientRequestURI: parsed_log.ClientRequestURI,
-				EdgeResponseBytes: parsed_log.EdgeResponseBytes,
-				EdgeResponseStatus: parsed_log.EdgeResponseStatus,
-				RayID: parsed_log.RayID
-			};
+			let reorganized_logs = time_log_reorder(parsed_log); 
 
 			//
-			//	5.
+			//	4.
 			//
 			let metadata_key = sumo_meta_key(container);
 
 			//
-			//	6.	Check if we have a key already in our object, and if so we 
+			//	5.	Check if we have a key already in our object, and if so we 
 			//		just push to the array new data. Or, we crate a new array
 			//		for that particular key
 			//
@@ -502,4 +492,63 @@ function make_sumo_logic_request(key, data, url)
 		});
 
 	});
+}
+
+//
+//	This function was created to sort the CloudFront log and make sure that the
+//	EdgeStartTimestamp and EdgeEndTimestamp are at the top of the object,
+//	while making sure that EdgeStartTimestamp is always the first element.
+//
+//	This is done because Sumo Logic will take the first time stamp in a log
+//	and use that to represent when the log was actually "created".
+//
+function time_log_reorder(obj)
+{
+	//
+	//  1.  Create a new variable that will hold our new sorted object
+	//
+	let tmp = {};
+
+	//
+	//  2.  Loop over the whole object in search for the first key that needs
+	//      to be as the first key in the object
+	//
+	for(let key in obj)
+	{
+		if(key == 'EdgeStartTimestamp')
+		{
+			tmp[key] = obj[key];
+		}
+	}
+
+	//
+	//  3.  Then look for the next most important key that needs to be at the
+	//      top of the key.
+	//
+	for(let key in obj)
+	{
+		if(key == 'EdgeEndTimestamp')
+		{
+			tmp[key] = obj[key];
+		}
+	}
+
+	//
+	//  4.  Once we have what we were looking fore, we loop the last time
+	//      over the original object and add the rest of the keys while
+	//      skipping what we have already
+	//
+	//
+	for(let key in obj)
+	{
+		if((key != 'EdgeStartTimestamp') || (key != 'EdgeEndTimestamp'))
+		{
+			tmp[key] = obj[key];
+		}
+	}
+
+	//
+	//  ->  Return the re-ordered object.
+	//
+	return tmp;
 }
