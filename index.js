@@ -49,7 +49,7 @@ exports.handler = async (event) => {
 		container = await split_new_line(container);
 		container = await check_for_time_presence(container);
 		container = await prepare_data_for_sumo_logic(container);
-		//container = await pass_logs_to_sumo_logic(container);
+		container = await pass_logs_to_sumo_logic(container);
 	}
 	catch(error)
 	{
@@ -193,13 +193,23 @@ function request_logs(container)
 			if(body === undefined)
 			{
 				//
-				//	->	Move to the next chain
+				//	->	Move to the next chain, despitne not having evrything
+				//		since the subsequnet promises will check if there
+				//		is data or not.
 				//
 				return resolve(container);
 			}
 			
 			//
-			//	3.	Save the response from CloudFlare for the next Promise, and 
+			//	3.	Check if we are makign to many requests
+			//
+			if(res.statusCode == 429)
+			{
+				return reject(new Error("Too Many Requests"));
+			}
+			
+			//
+			//	4.	Save the response from CloudFlare for the next Promise, and 
 			//		also remove any trailing white spaces from the response. 
 			//
 			//		CloudFlare is bit messy ;)
@@ -337,15 +347,6 @@ function prepare_data_for_sumo_logic(container)
 		//	1.	Loop over each log entry so we can modify each individual log
 		//
 		container.logs.forEach(function(log) {
-
-			//
-			//	<>> For debug, something wierd happend, where instead getting 
-			//		522 messages, I got 7, and they were not JSON :o
-			//
-			if(container.logs.length < 50)
-			{
-				console.log(log);
-			}
 			
 			//
 			//	1.	Convert the line in to a JS object
@@ -608,6 +609,7 @@ function time_log_reorder(obj)
 		if(key == 'EdgeEndTimestamp')
 		{
 			tmp[key] = obj[key];
+			break;
 		}
 	}
 
@@ -622,6 +624,7 @@ function time_log_reorder(obj)
 		if((key != 'EdgeStartTimestamp') || (key != 'EdgeEndTimestamp'))
 		{
 			tmp[key] = obj[key];
+			break;
 		}
 	}
 
