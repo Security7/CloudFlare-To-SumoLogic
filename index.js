@@ -1,3 +1,4 @@
+let moment = require('moment');
 let request = require('request');
 
 //
@@ -95,40 +96,54 @@ exports.handler = async (event) => {
 //
 
 //
-//	Prepare the time frame that we want to grab from CloudFlare.
+//	When we run this function we start tracking the time of the last execution 
+//	so we can tell CloudFront how much logs do we want and from when. This
+//	wa we always get the exact ammount of information.
 //
 function time_calculation(container)
 {
 	return new Promise(function(resolve, reject) {
 
 		//
-		//  1.	Logs are delayed by 30 minutes...
+		//	1.	By default we asume that we have the axess to the latest run
+		//		of the code, and so we take that as our starting point
 		//
-		let end_time = new Date(new Date() - (30 * 60 * 1000));
+		let start_time = container.req.start_time;
+		
+		//
+		//	2.	Use the Now, as the end date, since we want the logs from back
+		//		when and now.
+		//
+		let end_time = moment().subtract(300, 'seconds').toISOString();
+		
+		//
+		//	3.	Check if we are dealing with the first execution of the function
+		//		and create a new time stamp that will be passed on in the 
+		//		Step Function loop
+		//
+		if(!container.req.start_time)
+		{
+			start_time = end_time;
+		}
+		
+		//
+		//	4.	Use the end_time which is Now, and save for the next loop so we
+		//		know where we did left of.
+		//
+		container.res.start_time = end_time;
 
 		//
-		//  2.	Set exact time.
+		//	5. Save the time for the next promise.
 		//
-		end_time.setSeconds(0);
-		end_time.setMilliseconds(0);
-
-		//
-		//	3.	Set the start time based on the end time
-		//
-		let start_time = new Date(end_time - (1 * 60 * 1000));
+		container.start_time = start_time;
+		container.end_time = end_time;
 
 		//
 		//	<>> Log the times that we generated for easy debugging.
 		//
 		console.log("Start time: ", start_time);
 		console.log("End time: ",   end_time);
-
-		//
-		//	4. Save the time for the next promise.
-		//
-		container.start_time = start_time;
-		container.end_time = end_time;
-
+		
 		//
 		//	->	Move to the next chain.
 		//
