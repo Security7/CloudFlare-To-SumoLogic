@@ -46,8 +46,10 @@ exports.handler = async (event) => {
 	{
 		container = await time_calculation(container);
 		container = await request_logs(container);
+		container = await split_new_line(container);
+		container = await check_for_time_presence(container);
 		container = await prepare_data_for_sumo_logic(container);
-		container = await pass_logs_to_sumo_logic(container);
+		//container = await pass_logs_to_sumo_logic(container);
 	}
 	catch(error)
 	{
@@ -202,7 +204,7 @@ function request_logs(container)
 			//
 			//		CloudFlare is bit messy ;)
 			//
-			container.logs = body.trim();
+			container.raw_logs = body.trim();
 	
 			//
 			//	->	Move to the next chain
@@ -210,6 +212,115 @@ function request_logs(container)
 			return resolve(container);
 
 		});
+	});
+}
+
+//
+//	Get the raw logs, which are just one big string, and use the new line
+//	character to split each log in to an array, this way all the subsequent 
+//	promises can work with the data.
+//
+function split_new_line(container)
+{
+	return new Promise(function(resolve, reject) {
+		
+		//
+		//	1.	Check if CloudFlare actually gives us back something.
+		//
+		if(container.raw_logs.length == 0)
+		{
+			//
+			//	->	Move to the next chain
+			//
+			return resolve(container);
+		}
+		
+		//
+		//	2.	Split the string by new line so we get a nice array to work
+		//		with
+		//
+		container.logs = container.raw_logs.split('\n');
+		
+		//
+		//	<>> Log how many entries did we get
+		//
+		console.log("Log events: ", container.logs.length);
+		
+		//
+		//	->	Move to the next chain
+		//
+		return resolve(container);
+		
+	});
+}
+
+//
+//	CloudFront allows you to decide which files to return back. For Sumo Logic
+//	to be any use for you we need to send the start and end time of a request.
+//
+//		- EdgeStartTimestamp
+//		- EdgeEndTimestamp
+//
+//	This promise will check for thie two values, and will thrw an error if
+//	they are missing.
+//
+function check_for_time_presence(container)
+{
+	return new Promise(function(resolve, reject) {
+		
+		//
+		//	1.	This array will hold which key is missing
+		//
+		let what_is_missing = [];
+
+		//
+		//	2.	Parse just the first key since all of them will have the same
+		//		exact structure.
+		//
+		let log = JSON.parse(container.logs[0]);
+		
+		//
+		//	3.	Check to see if we missing the Start time
+		//
+		if(!log.EdgeStartTimestamp)
+		{
+			what_is_missing.push("Start");
+		}
+		
+		//
+		//	4.	Check to see if we missing the End time
+		//
+		if(!log.EdgeEndTimestamp)
+		{
+			what_is_missing.push("End");
+		}
+		
+		//
+		//	5.	Check if one of the previus checks added an item to the array
+		//
+		if(what_is_missing.length)
+		{
+			//
+			//	1.	Join the errors in to a single string
+			//
+			let missing = what_is_missing.join(', ');
+			
+			//
+			//	2.	Create the error message
+			//
+			let error = new Error("WARNING: " + missing + " time is missing");
+			
+			//
+			//	->	Stop the execution of the chain and surface the error
+			//
+			return reject(error);
+		}
+		
+		//
+		//	->	Move to the next chain
+		//
+		return resolve(container);
+		
 	});
 }
 
@@ -223,37 +334,15 @@ function prepare_data_for_sumo_logic(container)
 	return new Promise(function(resolve, reject) {
 
 		//
-		//	1.	Check if CloudFlare actually gives us back something.
+		//	1.	Loop over each log entry so we can modify each individual log
 		//
-		if(container.logs.length == 0)
-		{
-			//
-			//	->	Move to the next chain
-			//
-			return resolve(container);
-		}
-
-		//
-		//	2.	Split the string by new line so we get a nice array to work
-		//		with
-		//
-		let logs = container.logs.split('\n');
-
-		//
-		//	<>> Log how many entries did we get
-		//
-		console.log("Log events: ", logs.length);
-
-		//
-		//	3.	Loop over each log entry so we can modify each individual log
-		//
-		logs.forEach(function(log) {
+		container.logs.forEach(function(log) {
 
 			//
 			//	<>> For debug, something wierd happend, where instead getting 
 			//		522 messages, I got 7, and they were not JSON :o
 			//
-			if(logs.length < 50)
+			if(container.logs.length < 50)
 			{
 				console.log(log);
 			}
@@ -324,26 +413,15 @@ function prepare_data_for_sumo_logic(container)
 function pass_logs_to_sumo_logic(container)
 {
 	return new Promise(function(resolve, reject) {
-
-		//
-		//	1.	Check if CloudFlare actually gives us back something.
-		//
-		if(container.logs.length == 0)
-		{
-			//
-			//	->	Move to the next chain.
-			//
-			return resolve(container);
-		}
 		
 		//
-		//  2.  Create an array that will hold all the promies that will push
+		//  1.  Create an array that will hold all the promies that will push
 		//      data to Sumo Logic.
 		//
 		let tmp = [];
 		
 		//
-		//  3.  Loop over all our groupped data logs.
+		//  2.  Loop over all our groupped data logs.
 		//
 		for(let key in container.sumo_logs)
 		{
@@ -355,7 +433,7 @@ function pass_logs_to_sumo_logic(container)
 		}
 		
 		//
-		//  4.  Execute all the HTTP Request and wait for them to finish.
+		//  3.  Execute all the HTTP Request and wait for them to finish.
 		//
 		Promise.all(tmp)
 		.then(function() {
