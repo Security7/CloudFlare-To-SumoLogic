@@ -1,48 +1,44 @@
-"Parameters": {
+{
+    "Parameters": {
 
-    "BucketName" : {
-        "Description" : "Provide the bucket name where you uploaded the code",
-        "Type" : "String"
+        "CloudflareAuthEmail": {
+            "Description" : "Provide the email used in your account",
+            "Type" : "String"
+        },
+
+        "CloudflareAuthKey": {
+            "Description" : "Provide the API Key of CloudFlare for your account",
+            "Type" : "String"
+        },
+
+        "CloudflareFields": {
+            "Description" : "Provide a coma separated list of fields that you are interested - by default it can be empty",
+            "Type" : "String"
+        },
+
+        "CloudflareZoneId": {
+            "Description" : "Provide the Zone where your logs are",
+            "Type" : "String"
+        },
+
+        "SourceCategoryOverride": {
+            "Description" : "Provide the category override",
+            "Type" : "String"
+        },
+
+        "SourceHostOverride": {
+            "Description" : "Provide the host override",
+            "Type" : "String"
+        },
+
+        "SourceNameOverride": {
+            "Description" : "Provide the name override",
+            "Type" : "String"
+        },
+
+        "SumoEndpoint": {
+            "Description" : "Paste the Sumo endpoint where to send the logs",
+            "Type" : "String"
+        }
+
     },
-
-    "CLOUDFLARE_AUTH_EMAIL": {
-        "Description" : "Provide the email used in your account",
-        "Type" : "String"
-    },
-    
-    "CLOUDFLARE_AUTH_KEY": {
-        "Description" : "Provide the API Key of CloudFlare for your account",
-        "Type" : "String"
-    },
-
-    "CLOUDFLARE_FIELDS": {
-        "Description" : "Provide a coma separated list of fields that you are interested - by default it can be empty",
-        "Type" : "String"
-    },
-
-    "CLOUDFLARE_ZONE_ID": {
-        "Description" : "Provide the Zone where your logs are",
-        "Type" : "String"
-    },
-
-    "SOURCE_CATEGORY_OVERRIDE": {
-        "Description" : "Provide the category override",
-        "Type" : "String"
-    },
-
-    "SOURCE_HOST_OVERRIDE": {
-        "Description" : "Provide the host override",
-        "Type" : "String"
-    },
-
-    "SOURCE_NAME_OVERRIDE": {
-        "Description" : "Provide the name override",
-        "Type" : "String"
-    },
-
-    "SUMO_ENDPOINT": {
-        "Description" : "Paste the Sumo endpoint where to send the logs",
-        "Type" : "String"
-    }
-
-},

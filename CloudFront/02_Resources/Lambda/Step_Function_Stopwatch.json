@@ -1,39 +1,39 @@
 "LambdaStepFunctionStopwatch": {
-    "Type" : "AWS::Lambda::Function",
-    "DependsOn": ["RoleLambdaStepFunctionRestart"],
-    "Properties" : {
-        "Description" : "This function is used to check if the Step Function is running more then 1 year.",
-        "FunctionName" : {"Fn::Join": ["", ["-", "Step_Function_Restart", { "Ref": "AWS::StackName"}]]},
-        "Code" : {
-            "S3Bucket": { "Ref": "BucketName"},
-            "S3Key": "Step_Function_Stopwatch.zip"
+            "Type" : "AWS::Lambda::Function",
+            "DependsOn": ["LambdaStepFunctionStopwatchRole"],
+            "Properties" : {
+                "Description" : "This function is used to check if the Step Function is running more then 1 year.",
+                "FunctionName" : {"Fn::Join": ["", ["Step_Function_Stopwatch", "-", { "Ref": "AWS::StackName"}]]},
+                "Code" : {
+                    "S3Bucket": "net.security7.code",
+                    "S3Key": "Step_Function_Stopwatch.zip"
+                },
+                "Handler" : "index.handler",
+                "MemorySize" : 128,
+                "Role" : {"Fn::GetAtt" : ["LambdaStepFunctionStopwatchRole", "Arn"] },
+                "Runtime" : "nodejs8.10",
+                "Timeout" : 60
+            }
         },
-        "Handler" : "index.handler",
-        "MemorySize" : 128,
-        "Role" : {"Fn::GetAtt" : ["RoleLambdaStepFunctionRestart", "Arn"] },
-        "Runtime" : "nodejs8.10",
-        "Timeout" : 60
-    }
-},
 
-"RoleStepFunctionStopwatch": {
-    "Type": "AWS::IAM::Role",
-    "Properties": {
-        "RoleName": {"Fn::Join": ["", ["Lambda", "Step_Function_Stopwatch", "-", { "Ref": "AWS::StackName"}]]},
-        "AssumeRolePolicyDocument": {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {
-                        "Service": "lambda.amazonaws.com"
-                    },
-                    "Action": "sts:AssumeRole"
-                }
-            ]
+        "LambdaStepFunctionStopwatchRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "Step_Function_Stopwatch", "-", { "Ref": "AWS::StackName"}]]},
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ]
+            }
         },
-        "ManagedPolicyArns": [
-            "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-        ]
-    }
-},
