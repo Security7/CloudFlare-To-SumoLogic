@@ -2,6 +2,14 @@ let moment = require('moment');
 let request = require('request');
 
 //
+//	HTTPS Response Map
+//
+let http_errors = {
+	400: "Bad Request",
+	429: "Too Many Requests"
+};
+
+//
 //  This function is responsible for getting the logs to CloudFlare and then
 //  pass them to Sumo Logic.
 //
@@ -47,10 +55,17 @@ exports.handler = async (event) => {
 	{
 		container = await time_calculation(container);
 		container = await request_logs(container);
-		container = await split_new_line(container);
-		container = await check_for_time_presence(container);
-		container = await prepare_data_for_sumo_logic(container);
-		container = await pass_logs_to_sumo_logic(container);
+		
+		//
+		//	Process the logs only if there is something to process
+		//
+		if(container.raw_logs.length != 0)
+		{
+			container = await split_new_line(container);
+			container = await check_for_time_presence(container);
+			container = await prepare_data_for_sumo_logic(container);
+			container = await pass_logs_to_sumo_logic(container);
+		}
 	}
 	catch(error)
 	{
@@ -58,26 +73,11 @@ exports.handler = async (event) => {
 		//	<>> Put the detail in the logs for easy debugging
 		//
 		console.log(error);
-		
-		//
-		//  1.  Create a message to send back.
-		//
-		let message = {
-			message: error.message || error
-		};
-
-		//
-		//  2.  Create the response.
-		//
-		let response = {
-			statusCode: error.status || 500,
-			body: JSON.stringify(message, null, 4)
-		};
 
 		//
 		//  ->  Tell lambda that we finished.
 		//
-		return response;
+		throw error;
 	}
 
 	//
@@ -123,7 +123,7 @@ function time_calculation(container)
 		//
 		if(!container.req.start_time)
 		{
-			start_time = end_time;
+			start_time = moment().subtract(360, 'seconds').toISOString();
 		}
 		
 		//
@@ -172,14 +172,13 @@ function request_logs(container)
 		//
 		let options = {
 			url: url,
-			json: true,
 			headers: {
 				'X-Auth-Email': container.cloudflare_auth_email,
 				'X-Auth-Key': container.cloudflare_auth_key
 			},
 			qs: {
-				start: "2018-06-06T18:43:00.000Z", //container.start_time,
-				end: "2018-06-06T19:43:00.000Z", //container.end_time,
+				start: container.start_time,
+				end: container.end_time,
 				fields: container.cloudflare_fields
 			}
 		};
@@ -214,13 +213,35 @@ function request_logs(container)
 				//
 				return resolve(container);
 			}
-			
+	
 			//
 			//	3.	Check if we are makign to many requests
 			//
-			if(res.statusCode == 429)
+			if(res.statusCode >= 300)
 			{
-				return reject(new Error("Too Many Requests"));
+				//
+				//	1.	Create a clear message by appending the name of the 
+				//		service that failed to help us debug better the code
+				//
+				let message = "CloudFlare: " 
+							+ http_errors[res.statusCode]
+							+ " "
+							+ body;
+				
+				//
+				//	2.	Set the message
+				//	
+				let error = new Error(message);
+					
+				//
+				//	3.	Pass the Status Code nr for easier debugging
+				//
+				error.status = res.statusCode;
+					
+				//
+				//	->	Stop execution and surface the error
+				//
+				return reject(error);
 			}
 			
 			//
@@ -250,18 +271,7 @@ function split_new_line(container)
 	return new Promise(function(resolve, reject) {
 		
 		//
-		//	1.	Check if CloudFlare actually gives us back something.
-		//
-		if(container.raw_logs.length == 0)
-		{
-			//
-			//	->	Move to the next chain
-			//
-			return resolve(container);
-		}
-		
-		//
-		//	2.	Split the string by new line so we get a nice array to work
+		//	1.	Split the string by new line so we get a nice array to work
 		//		with
 		//
 		container.logs = container.raw_logs.split('\n');
@@ -292,7 +302,7 @@ function split_new_line(container)
 function check_for_time_presence(container)
 {
 	return new Promise(function(resolve, reject) {
-		
+
 		//
 		//	1.	This array will hold which key is missing
 		//
@@ -394,7 +404,8 @@ function prepare_data_for_sumo_logic(container)
 			let reorganized_logs = time_log_reorder(parsed_log); 
 
 			//
-			//	4.
+			//	4.	Create a special key that tell Sumo where the long should be
+			//		saved
 			//
 			let metadata_key = sumo_meta_key(container);
 
@@ -605,7 +616,7 @@ function time_log_reorder(obj)
 
 	//
 	//  2.  Loop over the whole object in search for the first key that needs
-	//      to be as the first key in the object
+	//      to be as the first key in the new object
 	//
 	for(let key in obj)
 	{
@@ -617,7 +628,7 @@ function time_log_reorder(obj)
 
 	//
 	//  3.  Then look for the next most important key that needs to be at the
-	//      top of the key.
+	//      top of the new object.
 	//
 	for(let key in obj)
 	{
