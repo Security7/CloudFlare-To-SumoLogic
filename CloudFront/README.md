@@ -1,0 +1,3 @@
+# CloudFormation template
+
+This folder contains the main AWS Stack definition for this project, under the name `CloudFront.json`. The additional folder structure in this folder is for development purpose only. To help developer reason more easily about the stack. Since a CF file can grow very quickly to a size hard to manage and reason about. By having each section in a separated file and basic folder structure, it becomes much easier to manage big projects. If this still confuses you, don't pay attention at the folders inside this one, you need to work only with the `CloudFront.json` file.

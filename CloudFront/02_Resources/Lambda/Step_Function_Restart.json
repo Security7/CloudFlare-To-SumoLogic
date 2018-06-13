@@ -1,0 +1,39 @@
+"LambdaStepFunctionRestart": {
+    "Type" : "AWS::Lambda::Function",
+    "DependsOn": ["RoleStepFunctionRestart"],
+    "Properties" : {
+        "Description" : "This function is used to restart a Step Function that reached its limits",
+        "FunctionName" : {"Fn::Join": ["", ["-", "Step_Function_Restart", { "Ref": "AWS::StackName"}]]},
+        "Code" : {
+            "S3Bucket": { "Ref": "BucketName"},
+            "S3Key": "Step_Function_Restart.zip"
+        },
+        "Handler" : "index.handler",
+        "MemorySize" : 128,
+        "Role" : {"Fn::GetAtt" : ["RoleStepFunctionRestart", "Arn"] },
+        "Runtime" : "nodejs8.10",
+        "Timeout" : 60
+    }
+},
+
+"RoleStepFunctionRestart": {
+    "Type": "AWS::IAM::Role",
+    "Properties": {
+        "RoleName": {"Fn::Join": ["", ["Lambda", "Step_Function_Restart", "-", { "Ref": "AWS::StackName"}]]},
+        "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "lambda.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                }
+            ]
+        },
+        "ManagedPolicyArns": [
+            "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        ]
+    }
+},

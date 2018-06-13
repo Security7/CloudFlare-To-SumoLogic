@@ -1,0 +1,47 @@
+"StepFunctionLoopCloudFlareToSumoLogic": {
+    "Type": "AWS::StepFunctions::StateMachine",
+    "DependsOn": [
+        "StepFunctionLoopCloudFlareToSumoLogicRole",
+        "LambdaCloudFlareToSumoLogic",
+        "LambdaStepFunctionIterator",
+        "LambdaStepFunctionRestart",
+        "LambdaStepFunctionStopwatch"
+    ],
+    "Properties": {
+        "StateMachineName": {"Fn::Join": ["", ["LoopCloudFlareToSumoLogic", "-", { "Ref": "AWS::StackName" }]]},
+        "RoleArn": {"Fn::GetAtt" : ["StepFunctionLoopCloudFlareToSumoLogicRole", "Arn"] },
+        "DefinitionString": {
+            "Fn::Sub": [
+                "{\r\n    \"Comment\": \"Infinite Loop\",\r\n    \"StartAt\": \"Configuration\",\r\n    \"States\": {\r\n        \"Configuration\": {\r\n            \"Type\": \"Pass\",\r\n            \"Result\": {\r\n                \"loop_limit\": 900,\r\n                \"loop_count\": 0,\r\n                \"year_limit\": false\r\n            },\r\n            \"ResultPath\": \"$\",\r\n            \"Next\": \"Iterator\"\r\n        },\r\n        \"Iterator\": {\r\n            \"Type\": \"Task\",\r\n            \"Resource\": \"${StepFunctionIteratorArn}\",\r\n            \"ResultPath\": \"$\",\r\n            \"Next\": \"Stopwatch\"\r\n        },\r\n        \"Stopwatch\": {\r\n            \"Type\": \"Task\",\r\n            \"Resource\": \"${StepFunctionStopwatchArn}\",\r\n            \"ResultPath\": \"$\",\r\n            \"Next\": \"Did We Rached Loop Limit?\"\r\n        },\r\n        \"Did We Rached Loop Limit?\": {\r\n            \"Type\": \"Choice\",\r\n            \"Choices\": [\r\n                {\r\n                    \"Variable\": \"$.count_limit\",\r\n                    \"BooleanEquals\": true,\r\n                    \"Next\": \"Is It One Year Already?\"\r\n                }\r\n            ],\r\n            \"Default\": \"Restart SF\"\r\n        },\r\n        \"Is It One Year Already?\": {\r\n            \"Type\": \"Choice\",\r\n            \"Choices\": [\r\n                {\r\n                    \"Variable\": \"$.year_limit\",\r\n                    \"BooleanEquals\": true,\r\n                    \"Next\": \"Restart SF\"\r\n                }\r\n            ],\r\n            \"Default\": \"CloudFlare-To-SumoLogic\"\r\n        },\r\n        \"CloudFlare-To-SumoLogic\": {\r\n            \"Type\": \"Task\",\r\n            \"Resource\": \"${LoopCloudFlareToSumoLogicArn}\",\r\n            \"ResultPath\": \"$\",\r\n            \"Next\": \"Wait 1min\"\r\n        },\r\n        \"Wait 1min\": {\r\n            \"Type\": \"Wait\",\r\n            \"Seconds\": 60,\r\n            \"Next\": \"Iterator\"\r\n        },\r\n        \"Restart SF\": {\r\n          \"Type\": \"Task\",\r\n          \"Resource\": \"${StepFunctionRestartArn}\",\r\n          \"End\": true \r\n        }\r\n    }\r\n}",
+                {
+                    "LoopCloudFlareToSumoLogicArn": {"Fn::GetAtt": ["LambdaCloudFlareToSumoLogic", "Arn"] },
+                    "StepFunctionIteratorArn": {"Fn::GetAtt": ["LambdaStepFunctionIterator", "Arn"] },
+                    "StepFunctionRestartArn": {"Fn::GetAtt": ["LambdaStepFunctionRestart", "Arn"] },
+                    "StepFunctionStopwatchArn": {"Fn::GetAtt": ["LambdaStepFunctionStopwatch", "Arn"] }
+                }
+            ]
+        }
+    }
+},
+
+"StepFunctionLoopCloudFlareToSumoLogicRole": {
+    "Type": "AWS::IAM::Role",
+    "Properties": {
+        "RoleName": {"Fn::Join": ["", ["Step_Function_Emotions", "-", { "Ref": "AWS::StackName" }]]},
+        "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "states.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                }
+            ]
+        },
+        "ManagedPolicyArns": [
+            "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"
+        ]
+    }
+},
