@@ -1,0 +1,61 @@
+{
+	"Parameters": {
+
+		"arn": {
+			"Description" : "ARN",
+			"Type" : "String"
+		},
+
+		"Password": {
+			"Description" : "ARN",
+			"Type" : "String"
+		},
+
+		"ConfirmPassword": {
+			"Description" : "ARN",
+			"Type" : "String"
+		}
+
+
+	},
+
+	"Resources": {
+
+		"TestPasswords": {
+			"Type": "Custom::LambdaCallout",
+			"Properties": {
+				"ServiceToken": "arn:aws:lambda:us-east-2:200573525486:function:Step_Function_Igniter",
+				"Password": {
+					"Ref": "Password"
+				},
+				"ConfirmPassword": {
+					"Ref": "ConfirmPassword"
+				},
+				"ble": "hello"
+			}
+		},
+
+		"TestPasswords2": {
+			"Type": "Custom::LambdaCallout",
+			"Properties": {
+				"ServiceToken": "arn:aws:lambda:us-east-2:200573525486:function:Step_Function_Igniter",
+				"Password": {
+					"Ref": "Password"
+				},
+				"ConfirmPassword": {
+					"Ref": "ConfirmPassword"
+				}
+			}
+		}
+
+	},
+	"Outputs" : {
+
+		"Status" : {
+			"Description" : "We are done",
+			"Value" : "Done"
+		}
+
+	}
+
+}

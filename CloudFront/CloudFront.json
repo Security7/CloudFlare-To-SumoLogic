@@ -63,6 +63,16 @@
             }
         },
 
+        "IgniteStepFunction": {
+            "Type": "Custom::LambdaCallout",
+            "DependsOn": ["LambdaStepFunctionIgniter", "StepFunctionLoopCloudFlareToSumoLogic"],
+            "Properties": {
+                "ServiceToken": { "Fn::GetAtt" : ["LambdaStepFunctionIgniter", "Arn"] },
+                "step_function_arn": { "Ref": "StepFunctionLoopCloudFlareToSumoLogic" },
+                "stack_name": { "Ref": "AWS::StackName"}
+            }
+        },
+
         "LambdaCloudFlareToSumoLogic": {
             "Type" : "AWS::Lambda::Function",
             "DependsOn": ["RoleCloudFlareToSumoLogic"],
@@ -112,6 +122,60 @@
                 "ManagedPolicyArns": [
                     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
                 ]
+            }
+        },
+
+        "LambdaStepFunctionIgniter": {
+            "Type" : "AWS::Lambda::Function",
+            "DependsOn": ["RoleStepFunctionIgniter"],
+            "Properties" : {
+                "Description" : "This function is used to check and increment any counter in a Step Function",
+                "FunctionName" : { "Fn::Join": ["", ["Step_Function_Igniter", "-", { "Ref": "AWS::StackName"}]]},
+                "Code" : {
+                    "S3Bucket": "net.security7.code",
+                    "S3Key": "Step_Function_Igniter.zip"
+                },
+                "Handler" : "index.handler",
+                "MemorySize" : 128,
+                "Role" : {"Fn::GetAtt" : ["RoleStepFunctionIgniter", "Arn"] },
+                "Runtime" : "nodejs8.10",
+                "Timeout" : 60
+            }
+        },
+
+        "RoleStepFunctionIgniter": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "Step_Function_Igniter", "-", { "Ref": "AWS::StackName"}]]},
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ],
+                "Policies": [ {
+                    "PolicyName": { "Fn::Join": ["", ["Invocke_Lambda_restart", "-", { "Ref": "AWS::StackName"}]]},
+                    "PolicyDocument": {
+                         "Version": "2012-10-17",
+                         "Statement": [
+                             {
+                                 "Sid": "VisualEditor0",
+                                 "Effect": "Allow",
+                                 "Action": "lambda:InvokeFunction",
+                                 "Resource": {"Fn::GetAtt": ["LambdaStepFunctionRestart", "Arn"] }
+                             }
+                         ]
+                     }
+                } ]
             }
         },
 
