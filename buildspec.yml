@@ -1,0 +1,30 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Entered the install phase...";
+      - echo "Nothing to do.";
+  pre_build:
+    commands:
+      - echo "Entered the pre_build phase...";
+      - echo "Log the source of the webhook that triggered this build, which will be used to see if we are dealing with a PR or not.";
+      - echo $CODEBUILD_SOURCE_VERSION
+      - echo "By default we asume we are dealing with a PR.";
+      - PULL_REQUEST=true
+      - echo "Check if we are dealing with a PR and if we are not - set the flag to false, so we can perform all the actions necessary.";
+      - echo $CODEBUILD_SOURCE_VERSION | grep -q "pr" || PULL_REQUEST=false
+  build:
+    commands:
+      - echo "Entered the build phase on `date`...";
+      - echo "Checking if we should build or not, based on PR flag.";
+      - if $PULL_REQUEST; then
+          echo "Repo not deployed becasue this is a Pull Request.";
+        else
+          npm run build;
+        fi
+      - echo "Build completed on `date`.";
+  post_build:
+    commands:
+      - echo "Entered the post_build phase...";
+      - echo "Nothing to do.";

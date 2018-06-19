@@ -4,6 +4,7 @@
   "description": "This repository grabs the logs from CloudFlare groups them and converts the time format for Sumo Logic to ingest.",
   "main": "index.js",
   "scripts": {
+    "build": "./build.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
