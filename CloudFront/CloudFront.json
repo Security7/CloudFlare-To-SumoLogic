@@ -1,0 +1,366 @@
+{
+    "Parameters": {
+
+        "CloudflareAuthEmail": {
+            "Description" : "Provide the email used in your account",
+            "Type" : "String"
+        },
+
+        "CloudflareAuthKey": {
+            "Description" : "Provide the API Key of CloudFlare for your account",
+            "Type" : "String"
+        },
+
+        "CloudflareFields": {
+            "Description" : "Provide a coma separated list of fields that you are interested - by default it can be empty",
+            "Type" : "String"
+        },
+
+        "CloudflareZoneId": {
+            "Description" : "Provide the Zone where your logs are",
+            "Type" : "String"
+        },
+
+        "SourceCategoryOverride": {
+            "Description" : "Provide the category override",
+            "Type" : "String"
+        },
+
+        "SourceHostOverride": {
+            "Description" : "Provide the host override",
+            "Type" : "String"
+        },
+
+        "SourceNameOverride": {
+            "Description" : "Provide the name override",
+            "Type" : "String"
+        },
+
+        "SumoEndpoint": {
+            "Description" : "Paste the Sumo endpoint where to send the logs",
+            "Type" : "String"
+        }
+
+    },
+
+    "Resources": {
+
+        "CloudFormationFlowDashboard": {
+            "Type" : "AWS::CloudWatch::Dashboard",
+            "DependsOn": [
+                "LambdaCloudFlareToSumoLogic"
+            ],
+            "Properties" : {
+                "DashboardName" : {"Fn::Join": ["", ["Log-Loop", "-", { "Ref": "AWS::StackName"}]]},
+                "DashboardBody" : {
+                    "Fn::Sub": [
+                        "{\r\n    \"widgets\": [\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 9,\r\n            \"width\": 24,\r\n            \"height\": 3,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/Lambda\", \"Errors\", \"FunctionName\", \"${Lambda}\", { \"color\": \"#d62728\", \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"Lambda Error\",\r\n                \"period\": 300\r\n            }\r\n        },\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 3,\r\n            \"width\": 24,\r\n            \"height\": 6,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/Lambda\", \"Invocations\", \"FunctionName\", \"${Lambda}\", { \"stat\": \"Sum\", \"color\": \"#1f77b4\", \"yAxis\": \"right\" } ],\r\n                    [ \".\", \"Duration\", \".\", \".\", { \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"Lambda: Duration & Invocation Count\",\r\n                \"period\": 300\r\n            }\r\n        },\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 0,\r\n            \"width\": 24,\r\n            \"height\": 3,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/States\", \"ProvisionedRefillRate\", \"ServiceMetric\", \"StateTransition\", { \"stat\": \"Sum\" } ],\r\n                    [ \".\", \"ConsumedCapacity\", \".\", \".\", { \"yAxis\": \"right\", \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"SF: Refill Rate & Consumed Capacity\"\r\n            }\r\n        }\r\n    ]\r\n}",
+                        {
+                            "Lambda": {"Ref": "LambdaCloudFlareToSumoLogic"}
+                        }
+                    ]
+                }
+            }
+        },
+
+        "IgniteStepFunction": {
+            "Type": "Custom::LambdaCallout",
+            "DependsOn": ["LambdaStepFunctionIgniter", "StepFunctionLoopCloudFlareToSumoLogic"],
+            "Properties": {
+                "ServiceToken": { "Fn::GetAtt" : ["LambdaStepFunctionIgniter", "Arn"] },
+                "step_function_arn": { "Ref": "StepFunctionLoopCloudFlareToSumoLogic" },
+                "stack_name": { "Ref": "AWS::StackName"}
+            }
+        },
+
+        "LambdaCloudFlareToSumoLogic": {
+            "Type" : "AWS::Lambda::Function",
+            "DependsOn": ["RoleCloudFlareToSumoLogic"],
+            "Properties" : {
+                "Description" : "This function will get logs from CloudFlare, process them and pass them to Sumo Logic",
+                "FunctionName" : {"Fn::Join": ["", ["CloudFlare-To-SumoLogic", "-", { "Ref": "AWS::StackName" }]]},
+                "Code" : {
+                    "S3Bucket": "net.security7.code",
+                    "S3Key": "CloudFlare-To-SumoLogic.zip"
+                },
+                "Environment" : {
+                    "Variables": {
+                        "CLOUDFLARE_AUTH_EMAIL": { "Ref": "CloudflareAuthEmail"},
+                        "CLOUDFLARE_AUTH_KEY": { "Ref": "CloudflareAuthKey"},
+                        "CLOUDFLARE_FIELDS": { "Ref": "CloudflareFields"},
+                        "CLOUDFLARE_ZONE_ID": { "Ref": "CloudflareZoneId"},
+                        "SOURCE_CATEGORY_OVERRIDE": { "Ref": "SourceCategoryOverride"},
+                        "SOURCE_HOST_OVERRIDE": { "Ref": "SourceHostOverride"},
+                        "SOURCE_NAME_OVERRIDE": { "Ref": "SourceNameOverride"},
+                        "SUMO_ENDPOINT": { "Ref": "SumoEndpoint"}
+                    }
+                },
+                "Handler" : "index.handler",
+                "MemorySize" : 512,
+                "Role" : {"Fn::GetAtt" : ["RoleCloudFlareToSumoLogic", "Arn"] },
+                "Runtime" : "nodejs8.10",
+                "Timeout" : 60
+            }
+        },
+
+        "RoleCloudFlareToSumoLogic": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "CloudFlare-To-SumoLogic", "-", { "Ref": "AWS::StackName"}]]},
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ]
+            }
+        },
+
+        "LambdaStepFunctionIgniter": {
+            "Type" : "AWS::Lambda::Function",
+            "DependsOn": ["RoleStepFunctionIgniter"],
+            "Properties" : {
+                "Description" : "This function is used to check and increment any counter in a Step Function",
+                "FunctionName" : { "Fn::Join": ["", ["Step_Function_Igniter", "-", { "Ref": "AWS::StackName"}]]},
+                "Code" : {
+                    "S3Bucket": "net.security7.code",
+                    "S3Key": "Step_Function_Igniter.zip"
+                },
+                "Handler" : "index.handler",
+                "MemorySize" : 128,
+                "Role" : {"Fn::GetAtt" : ["RoleStepFunctionIgniter", "Arn"] },
+                "Runtime" : "nodejs8.10",
+                "Timeout" : 60
+            }
+        },
+
+        "RoleStepFunctionIgniter": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "Step_Function_Igniter", "-", { "Ref": "AWS::StackName"}]]},
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ],
+                "Policies": [ {
+                    "PolicyName": { "Fn::Join": ["", ["Invocke_Lambda_restart", "-", { "Ref": "AWS::StackName"}]]},
+                    "PolicyDocument": {
+                         "Version": "2012-10-17",
+                         "Statement": [
+                             {
+                                 "Sid": "VisualEditor0",
+                                 "Effect": "Allow",
+                                 "Action": "lambda:InvokeFunction",
+                                 "Resource": {"Fn::GetAtt": ["LambdaStepFunctionRestart", "Arn"] }
+                             }
+                         ]
+                     }
+                } ]
+            }
+        },
+
+        "LambdaStepFunctionIterator": {
+            "Type" : "AWS::Lambda::Function",
+            "DependsOn": ["RoleStepFunctionIterator"],
+            "Properties" : {
+                "Description" : "This function is used to check and increment any counter in a Step Function",
+                "FunctionName" : {"Fn::Join": ["", ["Step_Function_Iterator", "-", { "Ref": "AWS::StackName"}]]},
+                "Code" : {
+                    "S3Bucket": "net.security7.code",
+                    "S3Key": "Step_Function_Iterator.zip"
+                },
+                "Environment" : {
+                    "Variables": {
+                        "LOOP_LIMIT": "900"
+                    }
+                },
+                "Handler" : "index.handler",
+                "MemorySize" : 128,
+                "Role" : {"Fn::GetAtt" : ["RoleStepFunctionIterator", "Arn"] },
+                "Runtime" : "nodejs8.10",
+                "Timeout" : 60
+            }
+        },
+
+        "RoleStepFunctionIterator": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "Step_Function_Iterator", "-", { "Ref": "AWS::StackName"}]]},
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ]
+            }
+        },
+
+        "LambdaStepFunctionRestart": {
+            "Type" : "AWS::Lambda::Function",
+            "DependsOn": ["RoleStepFunctionRestart"],
+            "Properties" : {
+                "Description" : "This function is used to restart a Step Function that reached its limits",
+                "FunctionName" : {"Fn::Join": ["", ["Step_Function_Restart", "-", { "Ref": "AWS::StackName"}]]},
+                "Code" : {
+                    "S3Bucket": "net.security7.code",
+                    "S3Key": "Step_Function_Restart.zip"
+                },
+                "Handler" : "index.handler",
+                "MemorySize" : 128,
+                "Role" : {"Fn::GetAtt" : ["RoleStepFunctionRestart", "Arn"] },
+                "Runtime" : "nodejs8.10",
+                "Timeout" : 60
+            }
+        },
+
+        "RoleStepFunctionRestart": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "Step_Function_Restart", "-", { "Ref": "AWS::StackName"}]]},
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                    "arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess"
+                ]
+            }
+        },
+
+        "LambdaStepFunctionStopwatch": {
+            "Type" : "AWS::Lambda::Function",
+            "DependsOn": ["LambdaStepFunctionStopwatchRole"],
+            "Properties" : {
+                "Description" : "This function is used to check if the Step Function is running more then 1 year.",
+                "FunctionName" : {"Fn::Join": ["", ["Step_Function_Stopwatch", "-", { "Ref": "AWS::StackName"}]]},
+                "Code" : {
+                    "S3Bucket": "net.security7.code",
+                    "S3Key": "Step_Function_Stopwatch.zip"
+                },
+                "Handler" : "index.handler",
+                "MemorySize" : 128,
+                "Role" : {"Fn::GetAtt" : ["LambdaStepFunctionStopwatchRole", "Arn"] },
+                "Runtime" : "nodejs8.10",
+                "Timeout" : 60
+            }
+        },
+
+        "LambdaStepFunctionStopwatchRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "Step_Function_Stopwatch", "-", { "Ref": "AWS::StackName"}]]},
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ]
+            }
+        },
+
+        "StepFunctionLoopCloudFlareToSumoLogic": {
+            "Type": "AWS::StepFunctions::StateMachine",
+            "DependsOn": [
+                "StepFunctionLoopCloudFlareToSumoLogicRole",
+                "LambdaCloudFlareToSumoLogic",
+                "LambdaStepFunctionIterator",
+                "LambdaStepFunctionRestart",
+                "LambdaStepFunctionStopwatch"
+            ],
+            "Properties": {
+                "StateMachineName": {"Fn::Join": ["", ["LoopCloudFlareToSumoLogic", "-", { "Ref": "AWS::StackName" }]]},
+                "RoleArn": {"Fn::GetAtt" : ["StepFunctionLoopCloudFlareToSumoLogicRole", "Arn"] },
+                "DefinitionString": {
+                    "Fn::Sub": [
+                        "{\r\n    \"Comment\": \"Infinite Loop\",\r\n    \"StartAt\": \"Iterator\",\r\n    \"States\": {\r\n        \"Iterator\": {\r\n            \"Type\": \"Task\",\r\n            \"Resource\": \"${LambdaStepFunctionIteratorArn}\",\r\n            \"ResultPath\": \"$\",\r\n            \"Next\": \"Stopwatch\"\r\n        },\r\n        \"Stopwatch\": {\r\n            \"Type\": \"Task\",\r\n            \"Resource\": \"${LambdaStepFunctionStopwatchArn}\",\r\n            \"ResultPath\": \"$\",\r\n            \"Next\": \"Did We Rached Loop Limit?\"\r\n        },\r\n        \"Did We Rached Loop Limit?\": {\r\n            \"Type\": \"Choice\",\r\n            \"Choices\": [\r\n                {\r\n                    \"Variable\": \"$.count_limit\",\r\n                    \"BooleanEquals\": true,\r\n                    \"Next\": \"Is It One Year Already?\"\r\n                }\r\n            ],\r\n            \"Default\": \"Restart SF\"\r\n        },\r\n        \"Is It One Year Already?\": {\r\n            \"Type\": \"Choice\",\r\n            \"Choices\": [\r\n                {\r\n                    \"Variable\": \"$.year_limit\",\r\n                    \"BooleanEquals\": true,\r\n                    \"Next\": \"Restart SF\"\r\n                }\r\n            ],\r\n            \"Default\": \"CloudFlare-To-SumoLogic\"\r\n        },\r\n        \"CloudFlare-To-SumoLogic\": {\r\n            \"Type\": \"Task\",\r\n            \"Resource\": \"${LambdaCloudFlareToSumoLogicArn}\",\r\n            \"ResultPath\": \"$\",\r\n            \"Next\": \"Wait 1min\"\r\n        },\r\n        \"Wait 1min\": {\r\n            \"Type\": \"Wait\",\r\n            \"Seconds\": 60,\r\n            \"Next\": \"Iterator\"\r\n        },\r\n        \"Restart SF\": {\r\n          \"Type\": \"Task\",\r\n          \"Resource\": \"${LambdaStepFunctionRestartArn}\",\r\n          \"End\": true \r\n        }\r\n    }\r\n}",
+                        {
+                            "LambdaStepFunctionIteratorArn": {"Fn::GetAtt": ["LambdaStepFunctionIterator", "Arn"] },
+                            "LambdaStepFunctionStopwatchArn": {"Fn::GetAtt": ["LambdaStepFunctionStopwatch", "Arn"] },
+                            "LambdaCloudFlareToSumoLogicArn": {"Fn::GetAtt": ["LambdaCloudFlareToSumoLogic", "Arn"] },
+                            "LambdaStepFunctionRestartArn": {"Fn::GetAtt": ["LambdaStepFunctionRestart", "Arn"] }
+                        }
+                    ]
+                }
+            }
+        },
+
+        "StepFunctionLoopCloudFlareToSumoLogicRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {"Fn::Join": ["", ["StepFunction", "_", "LoopCloudFlareToSumoLogic", "-", { "Ref": "AWS::StackName" }]]},
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "states.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"
+                ]
+            }
+        }
+
+    },
+    "Outputs" : {
+
+        "Status" : {
+            "Description" : "We are done",
+            "Value" : "Done"
+        }
+
+    }
+
+}

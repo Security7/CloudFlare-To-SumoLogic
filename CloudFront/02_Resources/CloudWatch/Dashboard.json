@@ -1,17 +1,17 @@
 "CloudFormationFlowDashboard": {
-    "Type" : "AWS::CloudWatch::Dashboard",
-    "DependsOn": [
-        "LambdaCloudFlareToSumoLogic"
-    ],
-    "Properties" : {
-        "DashboardName" : {"Fn::Join": ["", ["Log-Loop", "-", { "Ref": "AWS::StackName"}]]},
-        "DashboardBody" : {
-            "Fn::Sub": [
-                "{\r\n    \"widgets\": [\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 9,\r\n            \"width\": 24,\r\n            \"height\": 3,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/Lambda\", \"Errors\", \"FunctionName\", \"${Lambda}\", { \"color\": \"#d62728\", \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"Lambda Error\",\r\n                \"period\": 300\r\n            }\r\n        },\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 3,\r\n            \"width\": 24,\r\n            \"height\": 6,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/Lambda\", \"Invocations\", \"FunctionName\", \"${Lambda}\", { \"stat\": \"Sum\", \"color\": \"#1f77b4\", \"yAxis\": \"right\" } ],\r\n                    [ \".\", \"Duration\", \".\", \".\", { \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"Lambda: Duration & Invocation Count\",\r\n                \"period\": 300\r\n            }\r\n        },\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 0,\r\n            \"width\": 24,\r\n            \"height\": 3,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/States\", \"ProvisionedRefillRate\", \"ServiceMetric\", \"StateTransition\", { \"stat\": \"Sum\" } ],\r\n                    [ \".\", \"ConsumedCapacity\", \".\", \".\", { \"yAxis\": \"right\", \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"SF: Refill Rate & Consumed Capacity\"\r\n            }\r\n        }\r\n    ]\r\n}",
-                {
-                    "Lambda": {"Ref": "LambdaCloudFlareToSumoLogic"}
+            "Type" : "AWS::CloudWatch::Dashboard",
+            "DependsOn": [
+                "LambdaCloudFlareToSumoLogic"
+            ],
+            "Properties" : {
+                "DashboardName" : {"Fn::Join": ["", ["Log-Loop", "-", { "Ref": "AWS::StackName"}]]},
+                "DashboardBody" : {
+                    "Fn::Sub": [
+                        "{\r\n    \"widgets\": [\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 9,\r\n            \"width\": 24,\r\n            \"height\": 3,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/Lambda\", \"Errors\", \"FunctionName\", \"${Lambda}\", { \"color\": \"#d62728\", \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"Lambda Error\",\r\n                \"period\": 300\r\n            }\r\n        },\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 3,\r\n            \"width\": 24,\r\n            \"height\": 6,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/Lambda\", \"Invocations\", \"FunctionName\", \"${Lambda}\", { \"stat\": \"Sum\", \"color\": \"#1f77b4\", \"yAxis\": \"right\" } ],\r\n                    [ \".\", \"Duration\", \".\", \".\", { \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"Lambda: Duration & Invocation Count\",\r\n                \"period\": 300\r\n            }\r\n        },\r\n        {\r\n            \"type\": \"metric\",\r\n            \"x\": 0,\r\n            \"y\": 0,\r\n            \"width\": 24,\r\n            \"height\": 3,\r\n            \"properties\": {\r\n                \"view\": \"timeSeries\",\r\n                \"stacked\": false,\r\n                \"metrics\": [\r\n                    [ \"AWS\/States\", \"ProvisionedRefillRate\", \"ServiceMetric\", \"StateTransition\", { \"stat\": \"Sum\" } ],\r\n                    [ \".\", \"ConsumedCapacity\", \".\", \".\", { \"yAxis\": \"right\", \"stat\": \"Sum\" } ]\r\n                ],\r\n                \"region\": \"us-east-2\",\r\n                \"title\": \"SF: Refill Rate & Consumed Capacity\"\r\n            }\r\n        }\r\n    ]\r\n}",
+                        {
+                            "Lambda": {"Ref": "LambdaCloudFlareToSumoLogic"}
+                        }
+                    ]
                 }
-            ]
-        }
-    }
-},
+            }
+        },
