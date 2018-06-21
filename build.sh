@@ -80,6 +80,12 @@ do
         #
         aws s3 mb s3://$BUCKET --region ${REGIONS[$i]} > /dev/null;
         
+        #
+        #   Set read access to the bucket so if people want they can list
+        #   the content of the bucket and see what zip files do we provide
+        #
+        aws s3api put-bucket-acl --acl public-read --bucket $BUCKET
+        
     fi
 done
 
@@ -164,6 +170,12 @@ do
     #   Upload the ZIP file.
     #
     aws s3 cp $ARCHIVE_NAME.zip s3://$BUCKET/$ARCHIVE_NAME.zip;
+    
+    #
+    #   Set the object to be publicly readeble and only that so people can 
+    #   dowload it but can't change it.
+    #
+    aws s3api put-object-acl --key $ARCHIVE_NAME.zip --acl public-read --bucket net.security7.code.${REGIONS[$i]}
     
 done
 

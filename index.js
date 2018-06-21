@@ -377,24 +377,6 @@ function prepare_data_for_sumo_logic(container)
 			//	1.	Convert the line in to a JS object
 			//
 			let parsed_log = JSON.parse(log);
-
-			//
-			//	2.
-			//
-			if(!!parsed_log.cache)
-			{
-				if(!!parsed_log.cache.startTimestamp
-					&& parsed_log.cache.startTimestamp !== null)
-				{
-					parsed_log.cache.startTimestamp = parsed_log.cache.startTimestamp / 1000000;
-				}
-
-				if(!!parsed_log.cache.endTimestamp
-					&& parsed_log.cache.endTimestamp !== null)
-				{
-					parsed_log.cache.endTimestamp = parsed_log.cache.endTimestamp / 1000000;
-				}
-			}
 			
 			//
 			//	3.	Change the order of the elements in the object becasue 
@@ -477,7 +459,6 @@ function pass_logs_to_sumo_logic(container)
 		    return reject(error);
 		    
 		});
-
 
 	});
 }
