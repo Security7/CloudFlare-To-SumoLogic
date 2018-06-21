@@ -1,6 +1,6 @@
-# CloudFlare To SumoLogic
+# Cloudflare To SumoLogic
 
-This repository grabs the logs from CloudFlare groups them and converts the time format for Sumo Logic to ingest. 
+This repository grabs the logs from Cloudflare groups them and converts the time format for Sumo Logic to ingest. 
 
 # Deploy this stack
 
