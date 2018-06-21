@@ -5,7 +5,7 @@
                 "Description" : "This function is used to restart a Step Function that reached its limits",
                 "FunctionName" : {"Fn::Join": ["", ["Step_Function_Restart", "-", { "Ref": "AWS::StackName"}]]},
                 "Code" : {
-                    "S3Bucket": "net.security7.code",
+                    "S3Bucket": { "Fn::Join": ["", ["net.security7.code", ".", { "Ref": "AWS::Region"}]] },
                     "S3Key": "Step_Function_Restart.zip"
                 },
                 "Handler" : "index.handler",

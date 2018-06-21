@@ -5,7 +5,7 @@
                 "Description" : "This function will get logs from CloudFlare, process them and pass them to Sumo Logic",
                 "FunctionName" : {"Fn::Join": ["", ["CloudFlare-To-SumoLogic", "-", { "Ref": "AWS::StackName" }]]},
                 "Code" : {
-                    "S3Bucket": "net.security7.code",
+                    "S3Bucket": { "Fn::Join": ["", ["net.security7.code", ".", { "Ref": "AWS::Region"}]] },
                     "S3Key": "CloudFlare-To-SumoLogic.zip"
                 },
                 "Environment" : {
@@ -31,7 +31,7 @@
         "RoleCloudFlareToSumoLogic": {
             "Type": "AWS::IAM::Role",
             "Properties": {
-                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "CloudFlare-To-SumoLogic", "-", { "Ref": "AWS::StackName"}]]},
+                "RoleName": { "Fn::Join": ["", ["Lambda", "_", "CloudFlare-To-SumoLogic", "-", { "Ref": "AWS::StackName"}]] },
                 "AssumeRolePolicyDocument": {
                     "Version": "2012-10-17",
                     "Statement": [
