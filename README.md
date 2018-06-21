@@ -11,7 +11,7 @@ To deploy this solution just click the button found at the beginning of this sen
 
 ### ATTENTION
 
-In the section `Capabilities`, remember to check `I acknowledge that AWS CloudFormation might create IAM resources with custom names.`. This deployment needs to create **IAM Roles** for this stack to work properly.
+In the section `Capabilities`, remember to check `I acknowledge that AWS CloudFormation might create IAM resources with custom names.`. This deployment needs to create **IAM Roles** for the stack to work.
 
 # More about us
 
