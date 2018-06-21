@@ -9,6 +9,8 @@ This repository grabs the logs from CloudFlare groups them and converts the time
 
 To deploy this solution just click the button found at the beginning of this sentence, and follow the instructions that CloudFormation provides in your AWS Dashboard.
 
+**ATTENTION**: In the section `Capabilities`, remember to check `I acknowledge that AWS CloudFormation might create IAM resources with custom names.`. This deployment needs to create **IAM Roles** for this stack to work properly.
+
 # More about us
 
 [Security7](https://www.security7.net/) is a group of security professionals that strive to make security: affordable, scalable and reliable. If you'd like to get in touch with use, go to our [contact](https://www.security7.net/contact/) page.
