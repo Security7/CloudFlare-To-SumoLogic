@@ -80,7 +80,7 @@
                 "Description" : "This function will get logs from CloudFlare, process them and pass them to Sumo Logic",
                 "FunctionName" : {"Fn::Join": ["", ["CloudFlare-To-SumoLogic", "-", { "Ref": "AWS::StackName" }]]},
                 "Code" : {
-                    "S3Bucket": "net.security7.code",
+                    "S3Bucket": { "Fn::Join": ["", ["net.security7.code", ".", { "Ref": "AWS::Region"}]] },
                     "S3Key": "CloudFlare-To-SumoLogic.zip"
                 },
                 "Environment" : {
@@ -106,7 +106,7 @@
         "RoleCloudFlareToSumoLogic": {
             "Type": "AWS::IAM::Role",
             "Properties": {
-                "RoleName": {"Fn::Join": ["", ["Lambda", "_", "CloudFlare-To-SumoLogic", "-", { "Ref": "AWS::StackName"}]]},
+                "RoleName": { "Fn::Join": ["", ["Lambda", "_", "CloudFlare-To-SumoLogic", "-", { "Ref": "AWS::StackName"}]] },
                 "AssumeRolePolicyDocument": {
                     "Version": "2012-10-17",
                     "Statement": [
@@ -132,8 +132,13 @@
                 "Description" : "This function is used to check and increment any counter in a Step Function",
                 "FunctionName" : { "Fn::Join": ["", ["Step_Function_Igniter", "-", { "Ref": "AWS::StackName"}]]},
                 "Code" : {
-                    "S3Bucket": "net.security7.code",
+                    "S3Bucket": { "Fn::Join": ["", ["net.security7.code", ".", { "Ref": "AWS::Region"}]] },
                     "S3Key": "Step_Function_Igniter.zip"
+                },
+                "Environment" : {
+                    "Variables": {
+                        "LOOP_LIMIT": "900"
+                    }
                 },
                 "Handler" : "index.handler",
                 "MemorySize" : 128,
@@ -186,7 +191,7 @@
                 "Description" : "This function is used to check and increment any counter in a Step Function",
                 "FunctionName" : {"Fn::Join": ["", ["Step_Function_Iterator", "-", { "Ref": "AWS::StackName"}]]},
                 "Code" : {
-                    "S3Bucket": "net.security7.code",
+                    "S3Bucket": { "Fn::Join": ["", ["net.security7.code", ".", { "Ref": "AWS::Region"}]] },
                     "S3Key": "Step_Function_Iterator.zip"
                 },
                 "Environment" : {
@@ -231,7 +236,7 @@
                 "Description" : "This function is used to restart a Step Function that reached its limits",
                 "FunctionName" : {"Fn::Join": ["", ["Step_Function_Restart", "-", { "Ref": "AWS::StackName"}]]},
                 "Code" : {
-                    "S3Bucket": "net.security7.code",
+                    "S3Bucket": { "Fn::Join": ["", ["net.security7.code", ".", { "Ref": "AWS::Region"}]] },
                     "S3Key": "Step_Function_Restart.zip"
                 },
                 "Handler" : "index.handler",
@@ -272,7 +277,7 @@
                 "Description" : "This function is used to check if the Step Function is running more then 1 year.",
                 "FunctionName" : {"Fn::Join": ["", ["Step_Function_Stopwatch", "-", { "Ref": "AWS::StackName"}]]},
                 "Code" : {
-                    "S3Bucket": "net.security7.code",
+                    "S3Bucket": { "Fn::Join": ["", ["net.security7.code", ".", { "Ref": "AWS::Region"}]] },
                     "S3Key": "Step_Function_Stopwatch.zip"
                 },
                 "Handler" : "index.handler",
