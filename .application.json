@@ -1,0 +1,10 @@
+{
+    "DeploymentMethod": "lambda",
+    "Functions": {
+        "Cloudflare-To-SumoLogic": {
+            "PhysicalId": {
+                "us-east-2": "Cloudflare-To-SumoLogic"
+            }
+        }
+    }
+}

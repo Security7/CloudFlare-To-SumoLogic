@@ -60,6 +60,5 @@ typings/
 # next.js build output
 .next
 
-.application.json
 node_modules/
 .DS_Store
