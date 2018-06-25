@@ -470,8 +470,6 @@ function pass_logs_to_sumo_logic(container)
 		Promise.all(tmp)
 		.then(function() {
 		    
-		    console.log("Promise All");
-		    
 		    //
 			//	->	Move to the next chain
 			//
