@@ -13,7 +13,7 @@ let http_errors = {
 //  This function is responsible for getting the logs to CloudFlare and then
 //  pass them to Sumo Logic.
 //
-exports.handler = async (event) => {
+exports.handler = function(event, context, callback) {
 
 	//
 	//	1.	Create a container that will be passed around the chain.
@@ -49,26 +49,53 @@ exports.handler = async (event) => {
 	};
 
 	//
-	//	->	Start the chain.
+	//	2.	Start the chain
 	//
-	try 
-	{
-		container = await time_calculation(container);
-		container = await request_logs(container);
+	time_calculation(container)
+	.then(function(container) {
 		
-		//
-		//	Process the logs only if there is something to process
-		//
+		return request_logs(container);
+			
+	}).then(function(container) {
+		
 		if(container.raw_logs.length != 0)
 		{
-			container = await split_new_line(container);
-			container = await check_for_time_presence(container);
-			container = await prepare_data_for_sumo_logic(container);
-			container = await pass_logs_to_sumo_logic(container);
+			return split_new_line(container);
 		}
-	}
-	catch(error)
-	{
+		
+	}).then(function(container) {
+		
+		if(container.raw_logs.length != 0)
+		{
+			return check_for_time_presence(container);
+		}
+		
+		return container;
+		
+	}).then(function(container) {
+		
+		if(container.raw_logs.length != 0)
+		{
+			return prepare_data_for_sumo_logic(container);
+		}
+		
+		return container;
+		
+	}).then(function(container) {
+		
+		if(container.raw_logs.length != 0)
+		{
+			return pass_logs_to_sumo_logic(container);
+		}
+		
+		return container;
+		
+	}).then(function() {
+		
+		return callback(null, container.res);
+		
+	}).catch(function(error) {
+		
 		//
 		//	<>> Put the detail in the logs for easy debugging
 		//
@@ -77,13 +104,9 @@ exports.handler = async (event) => {
 		//
 		//  ->  Tell lambda that we finished.
 		//
-		throw error;
-	}
-
-	//
-	//	->	Return a positive response
-	//
-	return container.res;
+		throw callback(error);
+		
+	});
 	
 };
 
