@@ -63,6 +63,8 @@ exports.handler = function(event, context, callback) {
 			return split_new_line(container);
 		}
 		
+		return container;
+		
 	}).then(function(container) {
 		
 		if(container.raw_logs.length != 0)
