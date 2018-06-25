@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Security7/CloudFlare-To-SumoLogic.git"
+    "url": "git+https://github.com/Security7/Cloudflare-To-SumoLogic.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Security7/CloudFlare-To-SumoLogic/issues"
+    "url": "https://github.com/Security7/Cloudflare-To-SumoLogic/issues"
   },
-  "homepage": "https://github.com/Security7/CloudFlare-To-SumoLogic#readme",
+  "homepage": "https://github.com/Security7/Cloudflare-To-SumoLogic#readme",
   "dependencies": {
     "moment": "2.22.2",
     "request": "2.87.0"
