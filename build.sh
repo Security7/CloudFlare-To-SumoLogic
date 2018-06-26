@@ -35,6 +35,33 @@ REGIONS=(
     sa-east-1
 );
 
+#
+#   This variable is used to extend the name of the bucket that holds the zipped
+#   source code so it dose not colid with the production buckets. Since
+#   S3 have global names.
+#
+BUCKET_ANTI_COLISION_NAME="";
+
+#
+#   If the stage is anything but production, we use the stage value for the
+#   custom name of the bucket. This way if you want to deploy this 
+#   on another account, you can set your own name.
+#
+if [ $STAGE != "production" ]; then
+
+    #
+    #   Add the dot as section seapration here so it is easier to manage 
+    #   when we have the empty string.
+    #
+    BUCKET_ANTI_COLISION_NAME=.$STAGE;
+    
+fi
+
+#
+#   Create the base name of the bucket that is then used across the script
+#
+BUCKET_BASE_NAME=net.security7.code$BUCKET_ANTI_COLISION_NAME;
+
 #    __  __              _____   _   _
 #   |  \/  |     /\     |_   _| | \ | |
 #   | \  / |    /  \      | |   |  \| |
@@ -53,12 +80,12 @@ echo "";
 #   Loop over the AWS Region array and check if we have to create a bucket
 #   in a region that dosn't have our code.
 #
-for ((i=0; i < ${#REGIONS[@]}; i++));
-do
+for ((i=0; i < ${#REGIONS[@]}; i++)); do
+
     #
     #   Create the bucket name based on the region.
     #
-    BUCKET=net.security7.code."${REGIONS[$i]}";
+    BUCKET=$BUCKET_BASE_NAME."${REGIONS[$i]}";
     
     #
     #   <>> UI information.
@@ -87,6 +114,7 @@ do
         aws s3api put-bucket-acl --acl public-read --bucket $BUCKET
         
     fi
+    
 done
 
 #
@@ -158,13 +186,12 @@ echo "";
 #   Loop again aver all the regions and upload the source code in all the 
 #   regions that we support.
 #
-for ((i=0; i < ${#REGIONS[@]}; i++));
-do
+for ((i=0; i < ${#REGIONS[@]}; i++)); do
 
     #
     #   Create the bucket name based on the region.
     #
-    BUCKET=net.security7.code."${REGIONS[$i]}";
+    BUCKET=$BUCKET_BASE_NAME."${REGIONS[$i]}";
     
     #
     #   Upload the ZIP file.
@@ -175,7 +202,7 @@ do
     #   Set the object to be publicly readeble and only that so people can 
     #   dowload it but can't change it.
     #
-    aws s3api put-object-acl --key $ARCHIVE_NAME.zip --acl public-read --bucket net.security7.code.${REGIONS[$i]}
+    aws s3api put-object-acl --key $ARCHIVE_NAME.zip --acl public-read --bucket $BUCKET
     
 done
 

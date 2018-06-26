@@ -102,11 +102,11 @@ exports.handler = function(event, context, callback) {
 		//	<>> Put the detail in the logs for easy debugging
 		//
 		console.log(error);
-
+		
 		//
 		//  ->  Tell lambda that we finished.
 		//
-		throw callback(error);
+		return callback(error);
 		
 	});
 	
@@ -128,7 +128,7 @@ exports.handler = function(event, context, callback) {
 function time_calculation(container)
 {
 	return new Promise(function(resolve, reject) {
-
+		
 		//
 		//	1.	By default we asume that we have the axess to the latest run
 		//		of the code, and so we take that as our starting point
