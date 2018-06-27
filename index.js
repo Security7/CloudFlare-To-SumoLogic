@@ -654,7 +654,7 @@ function time_log_reorder(obj)
 		if((key != 'EdgeStartTimestamp') || (key != 'EdgeEndTimestamp'))
 		{
 			tmp[key] = obj[key];
-			break;
+			continue;
 		}
 	}
 
