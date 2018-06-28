@@ -404,17 +404,30 @@ function prepare_data_for_sumo_logic(container)
 			let parsed_log = JSON.parse(log);
 			
 			//
-			//	3.	Change the order of the elements in the object becasue 
+			//	2.	Change the order of the elements in the object becasue 
 			//		Sumo will generally select the timestamp that appears 
 			//		"furthest left" in the message. 		
 			//
 			let reorganized_logs = time_log_reorder(parsed_log); 
 
 			//
-			//	4.	Create a special key that tell Sumo where the long should be
+			//	3.	Create a special key that tell Sumo where the long should be
 			//		saved
 			//
 			let metadata_key = sumo_meta_key(container);
+
+			//
+			//	4.	Sumologic can't handle nanoseconds, so we remove a bit 
+			//		of precision.
+			//
+			let start = (reorganized_logs.EdgeStartTimestamp / 1000000).toFixed();
+			let end = (reorganized_logs.EdgeEndTimestamp / 1000000).toFixed();
+			
+			//
+			//	5.	Replace the time
+			//
+			reorganized_logs.EdgeStartTimestamp = start;
+			reorganized_logs.EdgeEndTimestamp = end;
 
 			//
 			//	5.	Check if we have a key already in our object, and if so we 
