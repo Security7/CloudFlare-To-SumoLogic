@@ -41,7 +41,7 @@ exports.handler = function(event, context, callback) {
 		//
 		//	Used to hold arrays of logs per zone for SumoLogic.
 		//
-		sumo_logs: {},
+		sumo_logs: [],
 		//
 		//	The default response for Lambda.
 		//
@@ -411,39 +411,27 @@ function prepare_data_for_sumo_logic(container)
 			let reorganized_logs = time_log_reorder(parsed_log); 
 
 			//
-			//	3.	Create a special key that tell Sumo where the long should be
-			//		saved
-			//
-			let metadata_key = sumo_meta_key(container);
-
-			//
-			//	4.	Sumologic can't handle nanoseconds, so we remove a bit 
-			//		of precision.
+			//	3.	Sumologic can't handle nanoseconds, so we remove a bit 
+			//		of precision, and make sure we don't send any decimals.
 			//
 			let start = (reorganized_logs.EdgeStartTimestamp / 1000000).toFixed();
 			let end = (reorganized_logs.EdgeEndTimestamp / 1000000).toFixed();
 			
 			//
-			//	5.	Replace the time
+			//	4.	Replace the time
 			//
 			reorganized_logs.EdgeStartTimestamp = start;
 			reorganized_logs.EdgeEndTimestamp = end;
 
 			//
-			//	5.	Check if we have a key already in our object, and if so we 
-			//		just push to the array new data. Or, we crate a new array
-			//		for that particular key
+			//	5.	Add the converted log to the main array that will be later 
+			//		on used to create all the necessary request for SumoLogic.
 			//
-			if(metadata_key in container.sumo_logs)
-			{
-				 container.sumo_logs[metadata_key].push(reorganized_logs);
-			}
-			else
-			{
-				 container.sumo_logs[metadata_key] = [reorganized_logs];
-			}
+			container.sumo_logs.push(reorganized_logs);
 
 		});
+		
+		console.log(container.sumo_logs);
 
 		//
 		//	->	Move to the next chain
@@ -468,19 +456,28 @@ function pass_logs_to_sumo_logic(container)
 		let tmp = [];
 		
 		//
-		//  2.  Loop over all our groupped data logs.
+		//	2.	Set the variables that needs to be set in the header of the
+		//		SumoLogic request. This right now are fixed values.
 		//
-		for(let key in container.sumo_logs)
-		{
+		let name = container.source_name_override;
+		let category = '';
+		let host = container.source_host_override;
+		
+		//
+		//  3.  Loop over all our groupped data logs.
+		//
+		container.sumo_logs.forEach(function(data) {
+			
 		    //
 		    //  1.  Prepare a HTTP request promise to our array for later 
 		    //      execution.
 		    //
-		    tmp.push(make_sumo_logic_request(key, container.sumo_logs[key], container.sumo_url));
-		}
+		    tmp.push(make_sumo_logic_request(name, category, host, data, container.sumo_url));
+		
+		});
 		
 		//
-		//  3.  Execute all the HTTP Request and wait for them to finish.
+		//  4.  Execute all the HTTP Request and wait for them to finish.
 		//
 		Promise.all(tmp)
 		.then(function() {
@@ -508,79 +505,25 @@ function pass_logs_to_sumo_logic(container)
 //
 
 //
-//	Generate a log source string for comparison.
-//
-function sumo_meta_key(container)
-{
-	//
-	//	1.	Prepare our variable to be populated.
-	//
-	let source_name = '';
-	let source_category = '';
-	let source_host = '';
-
-	//
-	//	2.
-	//
-	if(container.source_name_override !== null
-		&& container.source_name_override !== ''
-		&& container.source_name_override != 'none')
-	{
-		source_name = container.source_name_override;
-	}
-
-	//
-	//	3.
-	//
-	if(container.source_category_override !== null
-		&& container.source_category_override !== ''
-		&& container.source_category_override != 'none')
-	{
-		source_category = container.source_category_override;
-	}
-
-	//
-	//	4.
-	//
-	if(container.source_host_override !== null
-		&& container.source_host_override !== ''
-		&& container.source_host_override != 'none')
-	{
-		source_host = container.source_host_override;
-	}
-
-	//
-	//	->	Return the result.
-	//
-	return source_name + ':' + source_category + ':' + source_host;
-}
-
-//
 //  Each log gorup needs to be sent in a separate request. To do this in a
 //  efficint way we take advantage of the ability to execute an array of
 //  promises at the "same time". This way all the external request should 
 //  more or less finish at the "same" time.
 //
-function make_sumo_logic_request(key, data, url)
+function make_sumo_logic_request(name, categocry, host, data, url)
 {
 	return new Promise(function(resolve, reject) {
-	    
-	    //
-	    //  1.  Extract all the necessary data from the key used to group
-	    //      the data.
-	    //
-        let header_data = key.split(':');
         
 		//
-		//  2.  Prepare all the options for the request.
+		//  1.  Prepare all the options for the request.
 		//
 		let options = {
 			url: url,
 			json: true,
 			headers: {
-				'X-Sumo-Name': header_data[0],
-				'X-Sumo-Category': header_data[1],
-				'X-Sumo-Host': header_data[2]
+				'X-Sumo-Name': name,
+				'X-Sumo-Category': categocry,
+				'X-Sumo-Host': host
 			},
 			body:  data
 		};
