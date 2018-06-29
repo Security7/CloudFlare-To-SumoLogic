@@ -583,6 +583,7 @@ function time_log_reorder(obj)
 		if(key == 'EdgeStartTimestamp')
 		{
 			tmp[key] = obj[key];
+			break;
 		}
 	}
 
@@ -610,7 +611,6 @@ function time_log_reorder(obj)
 		if((key != 'EdgeStartTimestamp') || (key != 'EdgeEndTimestamp'))
 		{
 			tmp[key] = obj[key];
-			continue;
 		}
 	}
 
