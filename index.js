@@ -283,6 +283,12 @@ function request_logs(container)
 			//		CloudFlare is bit messy ;)
 			//
 			container.raw_logs = body.trim();
+			
+			//
+			//	5.	Log how much data did we got from CloudFlare so we 
+			//		can see in the logs if there were logs or not.
+			//
+			console.log("We've got %d bytes.", container.raw_logs.length);
 	
 			//
 			//	->	Move to the next chain
