@@ -6,7 +6,11 @@ let request = require('request');
 //
 let http_errors = {
 	400: "Bad Request",
-	429: "Too Many Requests"
+	429: "Too Many Requests",
+	500: "Internal Server Error",
+	502: "Bad gateway",
+	503: "Service Unavailable",
+	504: "Gateway Timeout"
 };
 
 //
@@ -249,8 +253,11 @@ function request_logs(container)
 				//		service that failed to help us debug better the code
 				//
 				let message = "CloudFlare: " 
-							+ http_errors[res.statusCode]
+							+ http_errors[res.statusCode] || "n/a"
 							+ " "
+							+ "( "
+							+ res.statusCode
+							+ " )"
 							+ body;
 				
 				//
