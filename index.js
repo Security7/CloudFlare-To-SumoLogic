@@ -437,8 +437,6 @@ function prepare_data_for_sumo_logic(container)
 			container.sumo_logs.push(reorganized_logs);
 
 		});
-		
-		console.log(container.sumo_logs);
 
 		//
 		//	->	Move to the next chain
