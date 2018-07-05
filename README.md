@@ -4,7 +4,7 @@ This repository pulls logs from Cloudflare's Enterprise Log Share /received endp
 
 # Deploy this stack
 
-<a target="_blank" href="https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=S7-C2S&templateURL=https://s3.us-east-2.amazonaws.com/net.security7.cloudformations/Cloudflare-to-SumoLogic.json">
+<a target="_blank" href="https://console.aws.amazon.com/cloudformation/home#/stacks/new?templateURL=https://s3.us-east-2.amazonaws.com/net.security7.cloudformations/Cloudflare-to-SumoLogic.json">
 <img align="left" style="float: left; margin: 0 10px 0 0;" src="https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png"></a>
 
 To deploy this solution just click the button found at the beginning of this sentence, and follow the instructions that CloudFormation provides in your AWS Dashboard.
